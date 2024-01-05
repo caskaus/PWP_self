@@ -93,31 +93,39 @@ Initial Condition File Generation
 
 ```
 # input_file = xr.open_dataset("ocean_daily_2006.nc")
-input_file = xr.open_mfdataset('/big_drive/kaushik/Datasets/Observation_Products/ARGO/98*.nc')
+
+# input_file = xr.open_mfdataset('/big_drive/kaushik/Datasets/Observation_Products/ARGO/98*.nc')
+
+# From ARGO Data
+
+input_file = xr.open_dataset('/big_drive/kaushik/PWP_runs/AS_65E_15N/GL_PR_PF_2902199.nc')
 
 # Depth as a dimension
 
 z_lev = input_file.LEV
-z_lev = z_lev[:27]
+z_lev = z_lev[:998]
 ```
 
 ```
 # Temp 
 
-temp = input_file.PTEMP
-temp = temp.isel(LEV=slice(0,27))
-temp = temp.sel(LAT96_120=["15."], LON51_100=["65."], method='nearest')[0,:,0,0]
+temp = input_file.TEMP
+temp = temp[0,:].isel(DEPTH=slice(0,998))
+# temp = temp.sel(LAT96_120=["15."], LON51_100=["65."], method='nearest')[:,:,0,0].sel(TIME=('2020-06'))
 # t = t.isel(time=0, latitude=0, longitude=0)
 
 # Salinity
 
-salt = input_file.SALT 
+salt = input_file.PSAL 
 # s = salt.sel(latitude=["15."], longitude=["65."], method='nearest')[0,:,:,:]
-salt = salt.isel(LEV=slice(0,27))
-salt = salt.sel(LAT91_120=["15."], LON41_80=["65."], method='nearest')[0,:,0,0]
+salt = salt[0,:].isel(DEPTH=slice(0,998))
+# salt = salt.sel(LAT91_120=["15."], LON41_80=["65."], method='nearest')[:,:,0,0].sel(TIME=('2020-06'))
 
-lati = s.latitude
-longi = s.longitude
+# lati = salt.LAT91_120
+# longi = salt.LON41_80
+
+lati = 13.86
+longi = 67.64
 ```
 
 ```
@@ -133,7 +141,7 @@ lon = ncfile.createVariable('lon', np.float32, ('lon',))
 lon.units = 'degrees'
 lon.long_name = 'degrees longitude'
 
-z_dim = ncfile.createDimension('z',40)
+z_dim = ncfile.createDimension('z',998)
 z = ncfile.createVariable('z', np.float32, ('z',))
 z.units = 'meters'
 z.long_name = 'depth in meters'
