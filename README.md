@@ -2,7 +2,7 @@
 My cluster (Ubuntu 22.0) version for PWP 1-d ocean model with some changes!
 
 ```
-cd /big_drive/kaushik/PWP_runs/AS_65E_15N
+cd /mnt/12tb_hdd/WORK/PWP_test
 ```
 
 import necessary Libraries, Half of these aren't even necessary
