@@ -6,7 +6,7 @@ cd /mnt/12tb_hdd/WORK/PWP_test
 ## Make sure this folder has the .py functions PWP.py and PWP_helper.py
 ```
 
-import necessary Libraries, Half of these aren't even necessary
+import necessary Libraries
 
 ```
 import matplotlib.pyplot as plt
