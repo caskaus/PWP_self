@@ -22,10 +22,10 @@ import timeit
 import os
 from datetime import datetime
 import PWP_helper as phf
-import imp
+import importlib
 
 
-imp.reload(phf)
+#imp.reload(phf)
 
 #from IPython.core.debugger import Tracer
 #debug_here = set_trace
