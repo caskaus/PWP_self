@@ -9,29 +9,10 @@ import necessary Libraries, Half of these aren't even necessary
 
 ```
 import matplotlib.pyplot as plt
-import cosima_cookbook as cc
-from tqdm import tqdm_notebook
-import IPython.display
-%matplotlib inline
 import xarray as xr
-import cartopy.crs as ccrs
-import cartopy
-import matplotlib
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import imageio
 import numpy as np
-import cmocean as cmo
 import netCDF4
 from netCDF4 import Dataset
-import datetime as datetime
-import pandas as pd
-from scipy import integrate
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import math
-from xoverturning import calcmoc
-import gsw
 ```
 
 Download Necessary Forcing files from ERA5
@@ -39,70 +20,78 @@ Download Necessary Forcing files from ERA5
 ```
 import cdsapi
 
-c = cdsapi.Client()
+dataset = "reanalysis-era5-single-levels"
+request = {
+    "product_type": ["reanalysis"],
+    "variable": [
+        "10m_u_component_of_wind",
+        "10m_v_component_of_wind",
+        "mean_surface_latent_heat_flux",
+        "mean_surface_net_long_wave_radiation_flux",
+        "mean_surface_net_short_wave_radiation_flux",
+        "mean_surface_sensible_heat_flux",
+        "mean_total_precipitation_rate"
+    ],
+    "year": ["2020"],
+    "month": [
+        "01", "02", "03",
+        "04", "05", "06",
+        "07", "08", "09",
+        "10", "11", "12"
+    ],
+    "day": [
+        "01", "02", "03",
+        "04", "05", "06",
+        "07", "08", "09",
+        "10", "11", "12",
+        "13", "14", "15",
+        "16", "17", "18",
+        "19", "20", "21",
+        "22", "23", "24",
+        "25", "26", "27",
+        "28", "29", "30",
+        "31"
+    ],
+    "time": [
+        "00:00", "03:00", "06:00",
+        "09:00", "12:00", "15:00",
+        "18:00", "21:00"
+    ],
+    "data_format": "grib",
+    "download_format": "unarchived",
+    "area": [16, 63, 14, 67]  ### region of interest [lat_max, lon_min, lat_min, lon_max]
+}
 
-c.retrieve(
-    'reanalysis-era5-single-levels',
-    {
-        'product_type': 'reanalysis',
-        'format': 'netcdf',
-        'variable': [
-            '10m_u_component_of_wind', '10m_v_component_of_wind', 'mean_surface_latent_heat_flux',
-            'mean_surface_net_long_wave_radiation_flux', 'mean_surface_net_short_wave_radiation_flux', 'mean_surface_sensible_heat_flux',
-            'mean_total_precipitation_rate',
-        ],
-        'year': '2020',
-        'month': [
-            '01', '02', '03',
-            '04', '05', '06',
-            '07', '08', '09',
-            '10', '11', '12',
-        ],
-        'day': [
-            '01', '02', '03',
-            '04', '05', '06',
-            '07', '08', '09',
-            '10', '11', '12',
-            '13', '14', '15',
-            '16', '17', '18',
-            '19', '20', '21',
-            '22', '23', '24',
-            '25', '26', '27',
-            '28', '29', '30',
-            '31',
-        ],
-        'time': [
-            '00:00', 
-            '03:00',
-            '06:00', 
-            '09:00',
-            '12:00',
-            '15:00',
-            '18:00',
-            '21:00',
-        ],
-        'area': [
-            16, 63, 14,
-            67,
-        ],
-    },
-    '/big_drive/kaushik/PWP_runs/AS_65E_15N/era5_65e15n_2020.nc')
+client = cdsapi.Client()
+client.retrieve(dataset, request).download()
+```
+Prepare the ERA data
+```
+!cdo -f nc copy 8bb8de8cae5e59a6beebe58863205ee1.grib forcing.nc   #### convert the grib file to an nc file
+!cdo chname,\10u,u10 forcing.nc out.nc; mv out.nc forcing.nc       #### rename u10 and v10 variable names
+!cdo chname,\10v,v10 forcing.nc out.nc; mv out.nc forcing.nc
 ```
 
 Initial Condition File Generation
 
 ```
-# input_file = xr.open_dataset("ocean_daily_2006.nc")
+# Temp initialised from WOA23 dataset
 
-# input_file = xr.open_mfdataset('/big_drive/kaushik/Datasets/Observation_Products/ARGO/98*.nc')
+temp = xr.open_dataset('/mnt/12tb_hdd/WORK/PWP_test/woa23_B5C2_t01_04.nc',decode_times=False).t_an
+temp = temp.sel(lat=15, lon=65, method='nearest')[0,:]
 
-# From ARGO Data
+# Salinity initialised from WOA23 dataset
 
-input_file = xr.open_dataset('/big_drive/kaushik/PWP_runs/AS_65E_15N/GL_PR_PF_2902199.nc')
+salt = xr.open_dataset('/mnt/12tb_hdd/WORK/PWP_test/woa23_B5C2_s01_04.nc',decode_times=False).s_an 
+salt = salt.sel(lat=15, lon=65, method='nearest')[0,:]
 
-# Depth as a dimension
+# lati = salt.LAT91_120
+# longi = salt.LON41_80
 
-z_lev = input_file.LEV
+lati = 15
+longi = 65
+
+z_lev = temp.depth
 z_lev = z_lev[:998]
 ```
 
@@ -129,7 +118,7 @@ longi = 67.64
 ```
 
 ```
-ncfile = Dataset('/big_drive/kaushik/PWP_runs/AS_55E_15N/input_data/initial_condition_65e15n_2020.nc',mode='w',format='NETCDF4_CLASSIC')
+ncfile = Dataset('/mnt/12tb_hdd/WORK/PWP_test/initial_condition_65e15n_2020.nc',mode='w',format='NETCDF4_CLASSIC')
 
 lat_dim = ncfile.createDimension('lat',1)
 lat = ncfile.createVariable('lat', np.float32, ('lat',))
@@ -141,7 +130,7 @@ lon = ncfile.createVariable('lon', np.float32, ('lon',))
 lon.units = 'degrees'
 lon.long_name = 'degrees longitude'
 
-z_dim = ncfile.createDimension('z',998)
+z_dim = ncfile.createDimension('z',57)
 z = ncfile.createVariable('z', np.float32, ('z',))
 z.units = 'meters'
 z.long_name = 'depth in meters'
@@ -169,16 +158,16 @@ ncfile.close()
 Forcing File Tidying
 
 ```
-forcings_file = xr.open_dataset("era5_65e15n_2020.nc")
-forcings_file = forcings_file.sel(longitude=["65."], latitude=["15."], method="nearest")
-forcings_file = forcings_file.isel(longitude=0, latitude=0)
+forcings_file = xr.open_dataset("/mnt/12tb_hdd/WORK/PWP_test/forcing.nc")
+forcings_file = forcings_file.sel(lon=["65."], lat=["15."], method="nearest")
+forcings_file = forcings_file.isel(lon=0, lat=0)
 ```
 
 State for how many days the model will be run (Here I have taken runtime=365days with \delta T=3hourly
 
 ```
 # Creating a relative time axis
-rtime = np.arange(0,365,0.125)
+rtime = np.arange(0,366,0.125)
 len(rtime)
 ```
 
@@ -223,7 +212,7 @@ forcings = xr.Dataset(
 ```
 
 ```
-forcings.to_netcdf("forcings_65e15n_2020.nc")
+forcings.to_netcdf("/mnt/12tb_hdd/WORK/PWP_test/forcings_65e15n_2020.nc")
 ```
 
 Run the Model!
@@ -251,6 +240,15 @@ def exp1run1():
     suffix = 'exp1_run1'
     forcing, pwp_out = PWP.run(met_data=forcing_fname, prof_data=prof_fname, suffix=suffix, save_plots=True, param_kwds=p)
 ```
+
+Make some necessary folders to tidy your run
+```
+!mkdir output
+!mkdir plots
+!mkdir input_data
+!mv forcings_65e15n_2020.nc initial_condition_65e15n_2020.nc input_data
+```
+
 
 ```
 exp1run1()
