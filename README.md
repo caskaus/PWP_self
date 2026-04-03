@@ -255,6 +255,8 @@ Make some necessary folders to tidy your run
 exp1run1()
 ```
 
+The output netCDF file is saved in the "output" folder in the run directory. 
+
 
 
 
