@@ -3,6 +3,7 @@ My cluster (Ubuntu 22.0) version for PWP 1-d ocean model with some changes!
 
 ```
 cd /mnt/12tb_hdd/WORK/PWP_test
+## Make sure this folder has the .py functions PWP.py and PWP_helper.py
 ```
 
 import necessary Libraries, Half of these aren't even necessary
